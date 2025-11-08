@@ -19,11 +19,11 @@ New modules under `examples/livekit_interruption_handler/`:
 - `tests/test_interrupt_handler.py` – pytest unit tests covering filler filtering, commands, and confidence gating.
 
 ## What Works
-- Speaking state is guarded by `asyncio.Lock` ensuring thread/async safety.
-- Filler-only segments are ignored while TTS is speaking, while real content interrupts playback and registers upstream.
-- Configurable command detection immediately stops TTS and forwards the speech.
-- Low-confidence murmurs can be dropped while speaking using the env-driven threshold.
-- Logging captures each decision path and metrics counters expose observed behavior.
+- Speaking state is guarded by `asyncio.Lock`, confirmed through unit tests that toggle the lifecycle hooks.
+- Filler-only segments are ignored while TTS is speaking, while real content interrupts playback and registers upstream—validated in the demo and `pytest` suite.
+- Configurable command detection immediately stops TTS and forwards the speech, as exercised by `test_command_stops_while_speaking`.
+- Low-confidence murmurs can be dropped while speaking using the env-driven threshold, demonstrated in both the scripted example and `test_low_confidence_drop_while_speaking`.
+- Logging captures each decision path and metrics counters expose observed behavior; run the demo to see INFO logs for fillers, interruptions, and low-confidence drops.
 
 ## Known Issues
 - The mock agent simulates TTS timing via sleeps; replace the placeholders to integrate with a real LiveKit session.
@@ -62,7 +62,7 @@ and `update_commands([...])` safely at runtime.
    pip install -e .
    pip install pytest
    ```
-2. Run the demo to observe logging and behavior:
+2. Run the demo to observe logging and behavior, confirming filler vs. real speech handling in real time:
    ```bash
    python examples/livekit_interruption_handler/agent_with_interrupts.py
    ```
@@ -71,12 +71,11 @@ and `update_commands([...])` safely at runtime.
    - A command interruption stopping TTS.
    - Filler recorded while the agent is silent.
    - Low-confidence murmur dropped during speech.
-3. Execute unit tests:
+3. Execute unit tests to verify the middleware decisions programmatically:
    ```bash
    pytest -q examples/livekit_interruption_handler/tests/test_interrupt_handler.py
    ```
-
-3. While the agent demo runs, speak or type (simulated via `asr_event`) phrases that
+4. While the agent demo runs, speak or type (simulated via `asr_event`) phrases that
    include fillers versus real content to observe when TTS is interrupted or ignored.
 
 Example log excerpt:
