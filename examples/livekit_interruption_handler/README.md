@@ -17,7 +17,7 @@ All new files live inside `examples/livekit_interruption_handler/`:
 - `interrupt_handler/logger.py` – shared logging configuration.
 - `interrupt_handler/middleware.py` – core interruption logic and metrics.
 - `agent_with_interrupts.py` – runnable demo wiring the middleware to mock TTS/ASR.
-- `interrupt_handler/tests/test_interrupt_handler.py` – pytest unit tests.
+- `tests/test_interrupt_handler.py` – pytest unit tests.
 
 ## How it works
 1. `SpeakingState` toggles on `on_tts_start` / `on_tts_end` using an
@@ -63,7 +63,7 @@ and `update_commands([...])` safely at runtime.
    - Low-confidence murmur dropped during speech.
 3. Execute unit tests:
    ```bash
-   pytest -q examples/livekit_interruption_handler/interrupt_handler/tests/test_interrupt_handler.py
+   pytest -q examples/livekit_interruption_handler/tests/test_interrupt_handler.py
    ```
 
 Example log excerpt:
