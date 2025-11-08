@@ -1,23 +1,33 @@
 # LiveKit Voice Interruption Handling Challenge
 
-## Overview
+## What Changed
 This sample adds a composable interruption layer that plugs in front of LiveKit's
 existing ASR/VAD pipeline without touching any code under `livekit-agents/` or
 `livekit-plugins/`. The middleware tracks when the agent TTS is speaking,
 filters incoming transcription events, and decides when to stop the agent or
 forward user speech upstream.
 
-## Modules
-All new files live inside `examples/livekit_interruption_handler/`:
+New modules under `examples/livekit_interruption_handler/`:
 
 - `interrupt_handler/config.py` – environment driven configuration loader.
 - `interrupt_handler/filler_lexicons.py` – default filler and command phrases.
 - `interrupt_handler/state.py` – async-safe speaking state tracker.
 - `interrupt_handler/filter.py` – normalization, filler detection, and command matching.
 - `interrupt_handler/logger.py` – shared logging configuration.
-- `interrupt_handler/middleware.py` – core interruption logic and metrics.
+- `interrupt_handler/middleware.py` – core interruption logic, metrics, and runtime update helpers.
 - `agent_with_interrupts.py` – runnable demo wiring the middleware to mock TTS/ASR.
-- `tests/test_interrupt_handler.py` – pytest unit tests.
+- `tests/test_interrupt_handler.py` – pytest unit tests covering filler filtering, commands, and confidence gating.
+
+## What Works
+- Speaking state is guarded by `asyncio.Lock` ensuring thread/async safety.
+- Filler-only segments are ignored while TTS is speaking, while real content interrupts playback and registers upstream.
+- Configurable command detection immediately stops TTS and forwards the speech.
+- Low-confidence murmurs can be dropped while speaking using the env-driven threshold.
+- Logging captures each decision path and metrics counters expose observed behavior.
+
+## Known Issues
+- The mock agent simulates TTS timing via sleeps; replace the placeholders to integrate with a real LiveKit session.
+- No persistence layer for metrics is included—collectors must poll `middleware.metrics` or wrap the logger.
 
 ## How it works
 1. `SpeakingState` toggles on `on_tts_start` / `on_tts_end` using an
@@ -44,7 +54,7 @@ Environment variables override defaults at runtime:
 Set `ALLOW_DYNAMIC_UPDATES=true` to call `InterruptMiddleware.update_fillers([...])`
 and `update_commands([...])` safely at runtime.
 
-## Steps to test
+## Steps to Test
 1. (Optional) create a virtual environment and install deps:
    ```bash
    python3 -m venv .venv
@@ -66,6 +76,9 @@ and `update_commands([...])` safely at runtime.
    pytest -q examples/livekit_interruption_handler/tests/test_interrupt_handler.py
    ```
 
+3. While the agent demo runs, speak or type (simulated via `asr_event`) phrases that
+   include fillers versus real content to observe when TTS is interrupted or ignored.
+
 Example log excerpt:
 ```
 2024-04-15 10:02:31,442 - livekit.interrupt_handler - INFO - TTS started
@@ -75,11 +88,15 @@ Example log excerpt:
 2024-04-15 10:02:31,742 - livekit.interrupt_handler - INFO - Registering user speech (speaking=False, final=True): 'umm'
 ```
 
+## Environment Details
+- **Python:** 3.10+
+- **Dependencies:** Standard library only for runtime; `pytest` for tests.
+- **Configuration:** Use the environment variables below to adjust runtime behavior.
+
 ## Notes
 - The middleware operates purely as an extension; no LiveKit VAD internals are
   modified.
 - Designed for Hinglish and other mixed-language phrases via configurable
   lexicons.
-- Python 3.10+ standard library only (plus `pytest` for tests).
 - Remember to place work on a feature branch before submitting:
   `feature/livekit-interrupt-handler-<yourname>`.
